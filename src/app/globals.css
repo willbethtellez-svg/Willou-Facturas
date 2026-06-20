@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-orange: #fb5a2e;
+  --color-purple: #d7bdff;
+  --color-dark: #232323;
+  --color-gray: #4c4c4c;
+}
+
+body {
+  background-color: #fafafa;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d7bdff;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c4a8e6;
+}
+
+/* Gradient backgrounds */
+.gradient-willou {
+  background: linear-gradient(135deg, #fb5a2e 0%, #ff6b9d 50%, #d7bdff 100%);
+}
+
+.gradient-willou-light {
+  background: linear-gradient(135deg, rgba(251, 90, 46, 0.1) 0%, rgba(215, 189, 255, 0.1) 100%);
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Button animation */
+.btn-animate {
+  transition: all 0.2s ease;
+}
+
+.btn-animate:hover {
+  transform: translateY(-1px);
+}
+
+.btn-animate:active {
+  transform: translateY(0);
+}
+
+/* Input focus ring */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+/* Table styles */
+.table-row {
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background-color: rgba(215, 189, 255, 0.1);
+}
