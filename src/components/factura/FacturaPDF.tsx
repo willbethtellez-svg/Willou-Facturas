@@ -1,4 +1,14 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
+
+Font.register({
+  family: 'Space Grotesk',
+  fonts: [
+    { src: '/assets/fonts/SpaceGrotesk-Regular.ttf', fontWeight: 400 },
+    { src: '/assets/fonts/SpaceGrotesk-Medium.ttf', fontWeight: 500 },
+    { src: '/assets/fonts/SpaceGrotesk-Bold.ttf', fontWeight: 600 },
+    { src: '/assets/fonts/SpaceGrotesk-Bold.ttf', fontWeight: 700 },
+  ],
+});
 
 interface FacturaPDFProps {
   factura: {
@@ -34,155 +44,191 @@ interface FacturaPDFProps {
 }
 
 const formatCurrency = (amount: number): string => {
-  return `${amount.toFixed(2)}€`;
+  return `${amount.toFixed(2)}`;
 };
 
-const formatNumber = (num: number, padding = 2): string => {
-  return String(num).padStart(padding, '0');
+const formatNumber = (num: number): string => {
+  return String(num).padStart(2, '0');
 };
+
+const formatDateShort = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const months = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+  return `${date.getDate()} de ${months[date.getMonth()]}, ${date.getFullYear()}`;
+};
+
+const MAX_VISIBLE_ROWS = 6;
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'Space Grotesk',
     fontSize: 10,
-    color: '#232323',
+    backgroundColor: '#0f0f0f',
+    padding: 0,
+    width: 595.28,
+    height: 841.89,
   },
 
-  header: {
-    backgroundColor: '#fb5a2e',
-    padding: 30,
-    paddingTop: 40,
-    paddingBottom: 35,
+  headerContainer: {
+    width: '100%',
+    height: 280,
+    position: 'relative',
   },
-  headerPurpleBar: {
-    backgroundColor: '#d7bdff',
-    height: 8,
-    marginTop: 15,
-    borderRadius: 4,
+  headerBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
   },
-  companyName: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 36,
-    color: '#ffffff',
-    marginBottom: 10,
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    padding: 35,
+    paddingBottom: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
   },
   facturaTitle: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 28,
+    fontFamily: 'Space Grotesk',
+    fontSize: 48,
+    fontWeight: '700',
     color: '#ffffff',
     marginBottom: 8,
+    letterSpacing: -1,
+  },
+  logoImage: {
+    width: 120,
+    height: 45,
+    objectFit: 'contain',
   },
   invoiceNumber: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 14,
+    fontFamily: 'Space Grotesk',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#ffffff',
     marginBottom: 4,
   },
   dateText: {
-    fontSize: 11,
+    fontFamily: 'Space Grotesk',
+    fontSize: 10,
     color: '#ffffff',
     marginBottom: 2,
+  },
+  dateLabel: {
+    fontWeight: '600',
   },
 
   infoSection: {
     flexDirection: 'row',
-    padding: 30,
-    paddingBottom: 10,
-    gap: 20,
+    justifyContent: 'space-between',
+    marginTop: 15,
   },
   infoColumn: {
-    flex: 1,
+    width: '48%',
   },
   infoLabel: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 12,
-    color: '#fb5a2e',
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#fb5a2e',
-    borderBottomStyle: 'solid',
-    paddingBottom: 4,
+    fontFamily: 'Space Grotesk',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 6,
   },
   infoText: {
-    fontSize: 10,
-    color: '#4c4c4c',
-    lineHeight: 1.6,
+    fontFamily: 'Space Grotesk',
+    fontSize: 9,
+    color: '#ffffff',
+    lineHeight: 1.5,
+    opacity: 0.9,
   },
   infoTextBold: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 10,
-    color: '#232323',
+    fontFamily: 'Space Grotesk',
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
   },
 
-  tableSection: {
-    paddingHorizontal: 30,
-    marginTop: 10,
+  contentSection: {
+    paddingHorizontal: 35,
+    paddingTop: 25,
+    paddingBottom: 15,
   },
+
   tableHeader: {
-    flexDirection: 'row',
     backgroundColor: '#fb5a2e',
-    borderRadius: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   tableHeaderText: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 10,
+    fontFamily: 'Space Grotesk',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#ffffff',
   },
-  tableHeaderCol1: {
-    width: 40,
-  },
-  tableHeaderCol2: {
-    flex: 1,
-  },
-  tableHeaderCol3: {
-    width: 90,
-    textAlign: 'right',
-  },
+  tableHeaderCol1: { width: 45 },
+  tableHeaderCol2: { flex: 1 },
+  tableHeaderCol3: { width: 100, textAlign: 'right' },
 
   tableRow: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#e0e0e0',
-    borderBottomStyle: 'solid',
+    alignItems: 'center',
+    marginBottom: 10,
+    minHeight: 52,
   },
-  tableRowEven: {
-    backgroundColor: '#fafafa',
-  },
-  tableRowText: {
-    fontSize: 10,
-    color: '#232323',
-  },
-  tableRowCol1: {
-    width: 40,
-  },
-  tableRowCol2: {
-    flex: 1,
-  },
-  tableRowCol3: {
-    width: 90,
-    textAlign: 'right',
-  },
+  tableRowDark: { backgroundColor: '#232323' },
+  tableRowEmpty: { backgroundColor: 'transparent' },
+  tableRowCol1: { width: 45 },
+  tableRowCol2: { flex: 1 },
+  tableRowCol3: { width: 100, textAlign: 'right' },
   serviceName: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 10,
-    color: '#232323',
+    fontFamily: 'Space Grotesk',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 2,
   },
-  serviceDescription: {
+  productValue: {
+    fontFamily: 'Space Grotesk',
     fontSize: 9,
-    color: '#4c4c4c',
-    marginTop: 2,
+    color: '#888888',
+  },
+  costText: {
+    fontFamily: 'Space Grotesk',
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#ffffff',
   },
 
   totalsSection: {
-    paddingHorizontal: 30,
-    marginTop: 15,
+    marginTop: 10,
     alignItems: 'flex-end',
+    paddingHorizontal: 35,
   },
-  totalsContainer: {
+  totalBreakdown: {
+    marginBottom: 8,
     width: 200,
   },
   totalRow: {
@@ -191,71 +237,85 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   totalLabel: {
-    fontSize: 10,
-    color: '#4c4c4c',
+    fontFamily: 'Space Grotesk',
+    fontSize: 9,
+    color: '#888888',
   },
   totalValue: {
-    fontSize: 10,
-    color: '#232323',
-  },
-  grandTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingTop: 8,
-    borderTopWidth: 1.5,
-    borderTopColor: '#fb5a2e',
-    borderTopStyle: 'solid',
-  },
-  grandTotalLabel: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 14,
-    color: '#fb5a2e',
-  },
-  grandTotalValue: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 14,
-    color: '#fb5a2e',
-  },
-
-  notesSection: {
-    paddingHorizontal: 30,
-    marginTop: 15,
-  },
-  notesText: {
+    fontFamily: 'Space Grotesk',
     fontSize: 9,
-    color: '#4c4c4c',
-    fontStyle: 'italic',
+    color: '#ffffff',
+  },
+  totalBoxOuter: {
+    borderWidth: 2,
+    borderColor: '#fb5a2e',
+    borderRadius: 20,
+    paddingHorizontal: 1,
+    paddingVertical: 1,
+  },
+  totalBoxInner: {
+    borderWidth: 1,
+    borderColor: '#d7bdff',
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  totalText: {
+    fontFamily: 'Space Grotesk',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 
   footer: {
-    marginTop: 40,
-    backgroundColor: '#232323',
-    padding: 25,
-    paddingHorizontal: 30,
+    backgroundColor: '#0f0f0f',
+    paddingHorizontal: 35,
+    paddingTop: 20,
+    paddingBottom: 30,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
-  footerQuestionText: {
-    fontFamily: 'Helvetica-Bold',
+  footerLeft: {
+    flex: 1,
+  },
+  footerQuestion: {
+    fontFamily: 'Space Grotesk',
     fontSize: 11,
+    fontWeight: '700',
     color: '#ffffff',
     marginBottom: 10,
-    textAlign: 'center',
   },
   footerContactRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 30,
+    gap: 20,
   },
   footerContactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 8,
+  },
+  footerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fb5a2e',
+  },
+  footerIconInner: {
+    width: 20,
+    height: 20,
+  },
+  footerContactInfo: {
+    flexDirection: 'column',
   },
   footerContactLabel: {
-    fontSize: 9,
-    color: '#d7bdff',
+    fontFamily: 'Space Grotesk',
+    fontSize: 8,
+    color: '#888888',
   },
   footerContactValue: {
+    fontFamily: 'Space Grotesk',
     fontSize: 9,
     color: '#ffffff',
   },
@@ -267,79 +327,83 @@ export default function FacturaPDF({
   items,
   configuracion,
 }: FacturaPDFProps) {
+  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const iva = factura.iva_monto;
+  const total = factura.total;
+
+  const visibleItems = items.slice(0, MAX_VISIBLE_ROWS);
+  const emptySlotCount = MAX_VISIBLE_ROWS - visibleItems.length;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.companyName}>{configuracion.nombre_empresa}</Text>
-          <Text style={styles.facturaTitle}>Factura</Text>
-          <Text style={styles.invoiceNumber}>N°: {factura.numero}</Text>
-          <Text style={styles.dateText}>
-            Fecha de emisión: {factura.fecha_emision}
-          </Text>
-          {factura.fecha_vencimiento && (
-            <Text style={styles.dateText}>
-              Fecha de vencimiento: {factura.fecha_vencimiento}
-            </Text>
-          )}
-          <View style={styles.headerPurpleBar} />
-        </View>
-
-        {/* Sender / Client Info */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoColumn}>
-            <Text style={styles.infoLabel}>De</Text>
-            <Text style={styles.infoTextBold}>{configuracion.nombre_empresa}</Text>
-            <Text style={styles.infoText}>{configuracion.direccion_empresa}</Text>
-            <Text style={styles.infoText}>{configuracion.correo_empresa}</Text>
-            <Text style={styles.infoText}>{configuracion.telefono_empresa}</Text>
-          </View>
-          <View style={styles.infoColumn}>
-            <Text style={styles.infoLabel}>Cliente</Text>
-            {cliente ? (
-              <>
-                <Text style={styles.infoTextBold}>
-                  {cliente.empresa || cliente.nombre}
+        <View style={styles.headerContainer}>
+          <Image src="/assets/pdf/header-bg.png" style={styles.headerBg} />
+          <View style={styles.headerOverlay}>
+            <View style={styles.headerTop}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.facturaTitle}>Factura</Text>
+                <Text style={styles.invoiceNumber}>N°: {factura.numero}</Text>
+                <Text style={styles.dateText}>
+                  <Text style={styles.dateLabel}>Fecha:</Text> {formatDateShort(factura.fecha_emision)}
                 </Text>
-                {cliente.empresa && (
-                  <Text style={styles.infoText}>{cliente.nombre}</Text>
+                {factura.fecha_vencimiento && (
+                  <Text style={styles.dateText}>
+                    <Text style={styles.dateLabel}>Vencimiento:</Text> {formatDateShort(factura.fecha_vencimiento)}
+                  </Text>
                 )}
-                {cliente.direccion && (
-                  <Text style={styles.infoText}>{cliente.direccion}</Text>
+              </View>
+              <Image src="/assets/pdf/logo-willou.png" style={styles.logoImage} />
+            </View>
+            <View style={styles.infoSection}>
+              <View style={styles.infoColumn}>
+                <Text style={styles.infoLabel}>De</Text>
+                <Text style={styles.infoTextBold}>{configuracion.nombre_empresa}</Text>
+                {configuracion.direccion_empresa && (
+                  <Text style={styles.infoText}>Dirección: {configuracion.direccion_empresa}</Text>
                 )}
-                {cliente.cif && (
-                  <Text style={styles.infoText}>CIF: {cliente.cif}</Text>
+              </View>
+              <View style={styles.infoColumn}>
+                <Text style={styles.infoLabel}>Cliente</Text>
+                {cliente ? (
+                  <>
+                    <Text style={styles.infoTextBold}>
+                      {cliente.empresa || cliente.nombre}
+                    </Text>
+                    {cliente.empresa && (
+                      <Text style={styles.infoText}>{cliente.nombre}</Text>
+                    )}
+                    {cliente.direccion && (
+                      <Text style={styles.infoText}>Dirección: {cliente.direccion}</Text>
+                    )}
+                    {cliente.cif && (
+                      <Text style={styles.infoText}>CIF: {cliente.cif}</Text>
+                    )}
+                    {cliente.correo && (
+                      <Text style={styles.infoText}>Correo: {cliente.correo}</Text>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.infoText}>Sin cliente asignado</Text>
                 )}
-                {cliente.correo && (
-                  <Text style={styles.infoText}>{cliente.correo}</Text>
-                )}
-              </>
-            ) : (
-              <Text style={styles.infoText}>Sin cliente asignado</Text>
-            )}
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Items Table */}
-        <View style={styles.tableSection}>
+        <View style={styles.contentSection}>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderText, styles.tableHeaderCol1]}>N°</Text>
-            <Text style={[styles.tableHeaderText, styles.tableHeaderCol2]}>
-              Servicio
-            </Text>
+            <Text style={[styles.tableHeaderText, styles.tableHeaderCol2]}>Servicio</Text>
             <Text style={[styles.tableHeaderText, styles.tableHeaderCol3]}>Costo</Text>
           </View>
 
-          {items.map((item, index) => (
+          {visibleItems.map((item, index) => (
             <View
               key={index}
-              style={[
-                styles.tableRow,
-                index % 2 === 0 ? {} : styles.tableRowEven,
-              ]}
+              style={[styles.tableRow, styles.tableRowDark]}
             >
-              <Text style={[styles.tableRowText, styles.tableRowCol1]}>
+              <Text style={[styles.serviceName, styles.tableRowCol1]}>
                 {formatNumber(index + 1)}
               </Text>
               <View style={styles.tableRowCol2}>
@@ -347,68 +411,65 @@ export default function FacturaPDF({
                   {item.servicio?.nombre || 'Servicio'}
                 </Text>
                 {item.descripcion && (
-                  <Text style={styles.serviceDescription}>{item.descripcion}</Text>
+                  <Text style={styles.productValue}>{item.descripcion}</Text>
                 )}
               </View>
-              <Text style={[styles.tableRowText, styles.tableRowCol3]}>
-                {formatCurrency(item.subtotal)}
+              <Text style={[styles.costText, styles.tableRowCol3]}>
+                ${formatCurrency(item.subtotal)}
               </Text>
             </View>
           ))}
+
+          {Array.from({ length: emptySlotCount }).map((_, index) => (
+            <View
+              key={`empty-${index}`}
+              style={[styles.tableRow, styles.tableRowEmpty]}
+            />
+          ))}
         </View>
 
-        {/* Totals */}
         <View style={styles.totalsSection}>
-          <View style={styles.totalsContainer}>
+          <View style={styles.totalBreakdown}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal</Text>
-              <Text style={styles.totalValue}>
-                {formatCurrency(factura.subtotal)}
-              </Text>
+              <Text style={styles.totalValue}>${formatCurrency(subtotal)}</Text>
             </View>
-            {factura.iva_monto > 0 && (
+            {iva > 0 && (
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>
-                  IVA ({factura.iva_porcentaje}%)
-                </Text>
-                <Text style={styles.totalValue}>
-                  {formatCurrency(factura.iva_monto)}
-                </Text>
+                <Text style={styles.totalLabel}>IVA ({factura.iva_porcentaje}%)</Text>
+                <Text style={styles.totalValue}>${formatCurrency(iva)}</Text>
               </View>
             )}
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>Total</Text>
-              <Text style={styles.grandTotalValue}>
-                {formatCurrency(factura.total)}
-              </Text>
+          </View>
+          <View style={styles.totalBoxOuter}>
+            <View style={styles.totalBoxInner}>
+              <Text style={styles.totalText}>Total: ${formatCurrency(total)}</Text>
             </View>
           </View>
         </View>
 
-        {/* Notes */}
-        {factura.notas && (
-          <View style={styles.notesSection}>
-            <Text style={styles.notesText}>Nota: {factura.notas}</Text>
-          </View>
-        )}
-
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerQuestionText}>
-            ¿Tienes alguna duda? ¡Contáctanos!
-          </Text>
-          <View style={styles.footerContactRow}>
-            <View style={styles.footerContactItem}>
-              <Text style={styles.footerContactLabel}>WhatsApp:</Text>
-              <Text style={styles.footerContactValue}>
-                {configuracion.telefono_empresa}
-              </Text>
-            </View>
-            <View style={styles.footerContactItem}>
-              <Text style={styles.footerContactLabel}>Correo:</Text>
-              <Text style={styles.footerContactValue}>
-                {configuracion.correo_empresa}
-              </Text>
+          <View style={styles.footerLeft}>
+            <Text style={styles.footerQuestion}>¿Tienes alguna duda? Contáctanos!</Text>
+            <View style={styles.footerContactRow}>
+              <View style={styles.footerContactItem}>
+                <View style={styles.footerIcon}>
+                  <Image src="/assets/pdf/whatsapp-icon.png" style={styles.footerIconInner} />
+                </View>
+                <View style={styles.footerContactInfo}>
+                  <Text style={styles.footerContactLabel}>Whatsapp</Text>
+                  <Text style={styles.footerContactValue}>{configuracion.telefono_empresa}</Text>
+                </View>
+              </View>
+              <View style={styles.footerContactItem}>
+                <View style={styles.footerIcon}>
+                  <Image src="/assets/pdf/email-icon.png" style={styles.footerIconInner} />
+                </View>
+                <View style={styles.footerContactInfo}>
+                  <Text style={styles.footerContactLabel}>Correo</Text>
+                  <Text style={styles.footerContactValue}>{configuracion.correo_empresa}</Text>
+                </View>
+              </View>
             </View>
           </View>
         </View>

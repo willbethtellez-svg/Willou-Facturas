@@ -41,7 +41,7 @@ export default function FacturaDetailPage() {
         .select(`
           *,
           clientes (*),
-          factura_items (*)
+          factura_items (*, servicios (*))
         `)
         .eq('id', facturaId)
         .single()
@@ -54,7 +54,10 @@ export default function FacturaDetailPage() {
 
       setFactura(facturaData)
       setCliente(facturaData.clientes)
-      setItems(facturaData.factura_items || [])
+      setItems((facturaData.factura_items || []).map((item: any) => ({
+        ...item,
+        servicio: item.servicios || null,
+      })))
     } catch (err) {
       console.error('Error fetching factura:', err)
       setError('Error al cargar la factura')

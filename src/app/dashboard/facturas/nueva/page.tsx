@@ -93,7 +93,6 @@ export default function NuevaFacturaPage() {
       const servicio = servicios.find(s => s.id === valor)
       if (servicio) {
         nuevosItems[index].nombre = servicio.nombre
-        nuevosItems[index].descripcion = servicio.descripcion || ''
         nuevosItems[index].precio_unitario = servicio.precio
       }
     }
@@ -255,10 +254,11 @@ export default function NuevaFacturaPage() {
                         <tr className="border-b border-gray-200">
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">N°</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Servicio</th>
-                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Cantidad</th>
-                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Precio Unitario</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Producto</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Cant.</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Precio</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Subtotal</th>
-                          <th className="text-right py-3 px-2 text-sm font-medium text-willou-gray">Acciones</th>
+                          <th className="text-right py-3 px-2 text-sm font-medium text-willou-gray"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -276,13 +276,20 @@ export default function NuevaFacturaPage() {
                             </td>
                             <td className="py-3 px-2">
                               <Input
+                                value={item.descripcion}
+                                onChange={(e) => actualizarItem(index, 'descripcion', e.target.value)}
+                                placeholder="Nombre del producto..."
+                              />
+                            </td>
+                            <td className="py-3 px-2" style={{ width: 70 }}>
+                              <Input
                                 type="number"
                                 min="1"
                                 value={item.cantidad}
                                 onChange={(e) => actualizarItem(index, 'cantidad', parseInt(e.target.value) || 1)}
                               />
                             </td>
-                            <td className="py-3 px-2">
+                            <td className="py-3 px-2" style={{ width: 100 }}>
                               <Input
                                 type="number"
                                 step="0.01"
@@ -290,8 +297,8 @@ export default function NuevaFacturaPage() {
                                 onChange={(e) => actualizarItem(index, 'precio_unitario', parseFloat(e.target.value) || 0)}
                               />
                             </td>
-                            <td className="py-3 px-2 text-sm font-medium text-willou-dark">
-                              {formatCurrency(item.subtotal)}
+                            <td className="py-3 px-2 text-sm font-medium text-willou-dark" style={{ width: 100 }}>
+                              ${formatCurrency(item.subtotal)}
                             </td>
                             <td className="py-3 px-2 text-right">
                               <button
