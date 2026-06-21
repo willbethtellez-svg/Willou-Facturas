@@ -60,7 +60,21 @@ const formatDateShort = (dateStr: string): string => {
   return `${date.getDate()} de ${months[date.getMonth()]}, ${date.getFullYear()}`;
 };
 
-const MAX_VISIBLE_ROWS = 6;
+// Layout constants
+const PAGE_WIDTH = 595.28;
+const A4_HEIGHT = 841.89;
+const HEADER_HEIGHT = 260;
+const CONTENT_TOP_PADDING = 20;
+const TABLE_HEADER_HEIGHT = 40;
+const TABLE_HEADER_MARGIN = 12;
+const ITEM_ROW_HEIGHT = 50;
+const ITEM_ROW_MARGIN = 8;
+const TOTALS_HEIGHT = 75;
+const FOOTER_HEIGHT = 90;
+const SIDE_PADDING = 30;
+
+const BASE_HEIGHT = HEADER_HEIGHT + CONTENT_TOP_PADDING + TABLE_HEADER_HEIGHT + TABLE_HEADER_MARGIN + TOTALS_HEIGHT + FOOTER_HEIGHT;
+const ITEM_HEIGHT = ITEM_ROW_HEIGHT + ITEM_ROW_MARGIN;
 
 const styles = StyleSheet.create({
   page: {
@@ -68,13 +82,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     backgroundColor: '#0f0f0f',
     padding: 0,
-    width: 595.28,
-    height: 841.89,
   },
 
   headerContainer: {
     width: '100%',
-    height: 280,
+    height: HEADER_HEIGHT,
     position: 'relative',
   },
   headerBg: {
@@ -90,8 +102,8 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    padding: 35,
-    paddingBottom: 20,
+    padding: 30,
+    paddingBottom: 15,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
@@ -106,29 +118,29 @@ const styles = StyleSheet.create({
   },
   facturaTitle: {
     fontFamily: 'Space Grotesk',
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 8,
+    marginBottom: 6,
     letterSpacing: -1,
   },
   logoImage: {
-    width: 120,
-    height: 45,
+    width: 110,
+    height: 40,
     objectFit: 'contain',
   },
   invoiceNumber: {
     fontFamily: 'Space Grotesk',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   dateText: {
     fontFamily: 'Space Grotesk',
-    fontSize: 10,
+    fontSize: 9,
     color: '#ffffff',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   dateLabel: {
     fontWeight: '600',
@@ -137,142 +149,133 @@ const styles = StyleSheet.create({
   infoSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 15,
+    marginTop: 10,
   },
   infoColumn: {
     width: '48%',
   },
   infoLabel: {
     fontFamily: 'Space Grotesk',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   infoText: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     color: '#ffffff',
-    lineHeight: 1.5,
+    lineHeight: 1.4,
     opacity: 0.9,
   },
   infoTextBold: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 2,
+    marginBottom: 1,
   },
 
   contentSection: {
-    paddingHorizontal: 35,
-    paddingTop: 25,
-    paddingBottom: 15,
+    paddingHorizontal: SIDE_PADDING,
+    paddingTop: CONTENT_TOP_PADDING,
+    paddingBottom: 10,
   },
 
   tableHeader: {
     backgroundColor: '#fb5a2e',
     borderRadius: 25,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  tableHeaderText: {
-    fontFamily: 'Space Grotesk',
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  tableHeaderCol1: { width: 45 },
-  tableHeaderCol2: { flex: 1 },
-  tableHeaderCol3: { width: 100, textAlign: 'right' },
-
-  tableRow: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 8,
     paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    minHeight: 52,
+    marginBottom: TABLE_HEADER_MARGIN,
+  },
+  tableHeaderText: {
+    fontFamily: 'Space Grotesk',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  tableHeaderCol1: { width: 40 },
+  tableHeaderCol2: { flex: 1 },
+  tableHeaderCol3: { width: 90, textAlign: 'right' },
+
+  tableRow: {
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: ITEM_ROW_MARGIN,
+    height: ITEM_ROW_HEIGHT,
   },
   tableRowDark: { backgroundColor: '#232323' },
-  tableRowEmpty: { backgroundColor: 'transparent' },
-  tableRowCol1: { width: 45 },
+  tableRowCol1: { width: 40 },
   tableRowCol2: { flex: 1 },
-  tableRowCol3: { width: 100, textAlign: 'right' },
+  tableRowCol3: { width: 90, textAlign: 'right' },
   serviceName: {
     fontFamily: 'Space Grotesk',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#ffffff',
-    marginBottom: 2,
   },
   productValue: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     color: '#888888',
+    marginTop: 1,
   },
   costText: {
     fontFamily: 'Space Grotesk',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     color: '#ffffff',
   },
 
   totalsSection: {
-    marginTop: 10,
+    marginTop: 5,
     alignItems: 'flex-end',
-    paddingHorizontal: 35,
+    paddingHorizontal: SIDE_PADDING,
   },
   totalBreakdown: {
-    marginBottom: 8,
-    width: 200,
+    marginBottom: 6,
+    width: 180,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
   totalLabel: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     color: '#888888',
   },
   totalValue: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     color: '#ffffff',
   },
-  totalBoxOuter: {
-    borderWidth: 2,
+  totalBox: {
+    borderWidth: 1.5,
     borderColor: '#fb5a2e',
-    borderRadius: 20,
-    paddingHorizontal: 1,
-    paddingVertical: 1,
-  },
-  totalBoxInner: {
-    borderWidth: 1,
-    borderColor: '#d7bdff',
     borderRadius: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 8,
     backgroundColor: 'transparent',
   },
   totalText: {
     fontFamily: 'Space Grotesk',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#ffffff',
   },
 
   footer: {
-    backgroundColor: '#0f0f0f',
-    paddingHorizontal: 35,
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingHorizontal: SIDE_PADDING,
+    paddingTop: 15,
+    paddingBottom: 25,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
@@ -282,41 +285,41 @@ const styles = StyleSheet.create({
   },
   footerQuestion: {
     fontFamily: 'Space Grotesk',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   footerContactRow: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 16,
   },
   footerContactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   footerIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#fb5a2e',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   footerIconInner: {
-    width: 20,
-    height: 20,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   footerContactInfo: {
     flexDirection: 'column',
   },
   footerContactLabel: {
     fontFamily: 'Space Grotesk',
-    fontSize: 8,
+    fontSize: 7,
     color: '#888888',
   },
   footerContactValue: {
     fontFamily: 'Space Grotesk',
-    fontSize: 9,
+    fontSize: 8,
     color: '#ffffff',
   },
 });
@@ -331,12 +334,15 @@ export default function FacturaPDF({
   const iva = factura.iva_monto;
   const total = factura.total;
 
-  const visibleItems = items.slice(0, MAX_VISIBLE_ROWS);
-  const emptySlotCount = MAX_VISIBLE_ROWS - visibleItems.length;
+  const contentHeight = HEADER_HEIGHT + CONTENT_TOP_PADDING + TABLE_HEADER_HEIGHT + TABLE_HEADER_MARGIN + items.length * ITEM_HEIGHT;
+  const bottomHeight = TOTALS_HEIGHT + FOOTER_HEIGHT;
+  const naturalTotal = contentHeight + bottomHeight;
+  const spacerHeight = Math.max(0, A4_HEIGHT - naturalTotal);
+  const pageHeight = Math.max(A4_HEIGHT, naturalTotal);
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size={[PAGE_WIDTH, pageHeight]} style={styles.page}>
         <View style={styles.headerContainer}>
           <Image src="/assets/pdf/header-bg.png" style={styles.headerBg} />
           <View style={styles.headerOverlay}>
@@ -398,7 +404,7 @@ export default function FacturaPDF({
             <Text style={[styles.tableHeaderText, styles.tableHeaderCol3]}>Costo</Text>
           </View>
 
-          {visibleItems.map((item, index) => (
+          {items.map((item, index) => (
             <View
               key={index}
               style={[styles.tableRow, styles.tableRowDark]}
@@ -419,14 +425,11 @@ export default function FacturaPDF({
               </Text>
             </View>
           ))}
-
-          {Array.from({ length: emptySlotCount }).map((_, index) => (
-            <View
-              key={`empty-${index}`}
-              style={[styles.tableRow, styles.tableRowEmpty]}
-            />
-          ))}
         </View>
+
+        {spacerHeight > 0 && (
+          <View style={{ height: spacerHeight }} />
+        )}
 
         <View style={styles.totalsSection}>
           <View style={styles.totalBreakdown}>
@@ -441,10 +444,8 @@ export default function FacturaPDF({
               </View>
             )}
           </View>
-          <View style={styles.totalBoxOuter}>
-            <View style={styles.totalBoxInner}>
-              <Text style={styles.totalText}>Total: ${formatCurrency(total)}</Text>
-            </View>
+          <View style={styles.totalBox}>
+            <Text style={styles.totalText}>Total: ${formatCurrency(total)}</Text>
           </View>
         </View>
 
