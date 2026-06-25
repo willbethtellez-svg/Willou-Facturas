@@ -47,6 +47,8 @@ export interface Factura {
   iva_porcentaje: number;
   iva_monto: number;
   total: number;
+  monto_abonado: number;
+  saldo_pendiente: number;
   notas: string | null;
   created_at: string;
   updated_at: string;

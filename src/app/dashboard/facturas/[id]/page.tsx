@@ -146,6 +146,16 @@ export default function FacturaDetailPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <Link href={`/dashboard/facturas/${factura.id}/editar`}>
+                <button
+                  className="px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2 hover:border-willou-orange hover:bg-willou-orange/5 transition-all"
+                >
+                  <svg className="w-4 h-4" style={{ color: '#4c4c4c' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span style={{ color: '#4c4c4c' }}>Editar</span>
+                </button>
+              </Link>
               {factura.estado === 'pendiente' && (
                 <Button
                   onClick={handleMarkAsPaid}
@@ -157,29 +167,37 @@ export default function FacturaDetailPage() {
               )}
               <button
                 onClick={async () => {
-                  const blob = await pdf(
-                    <FacturaPDF
-                      factura={factura}
-                      cliente={cliente}
-                      items={items}
-                      configuracion={configuracion || {
-                        nombre_empresa: 'willou',
-                        direccion_empresa: '',
-                        telefono_empresa: '',
-                        correo_empresa: ''
-                      }}
-                    />
-                  ).toBlob();
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `factura-${factura.numero}.pdf`;
-                  a.click();
-                  URL.revokeObjectURL(url);
+                  try {
+                    const blob = await pdf(
+                      <FacturaPDF
+                        factura={factura}
+                        cliente={cliente}
+                        items={items}
+                        configuracion={configuracion || {
+                          nombre_empresa: 'willou',
+                          direccion_empresa: '',
+                          telefono_empresa: '',
+                          correo_empresa: ''
+                        }}
+                      />
+                    ).toBlob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `factura-${factura.numero}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err) {
+                    console.error('Error generating PDF:', err);
+                    toast.error('Error al generar el PDF');
+                  }
                 }}
-                className="px-6 py-3 rounded-xl border border-willou-orange text-willou-orange hover:bg-willou-orange hover:text-white transition-all duration-200"
+                className="px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-2 hover:border-willou-orange hover:bg-willou-orange/5 transition-all"
               >
-                Descargar PDF
+                <svg className="w-4 h-4" style={{ color: '#4c4c4c' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span style={{ color: '#4c4c4c' }}>Descargar PDF</span>
               </button>
               <Link href="/dashboard/facturas">
                 <Button variant="outline" style={{ borderColor: '#d7bdff', color: '#4c4c4c' }}>

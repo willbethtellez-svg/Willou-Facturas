@@ -141,34 +141,47 @@ export default function DashboardPage() {
                 Ver todas →
               </Link>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="p-4 space-y-3">
               {recentInvoices.length === 0 ? (
                 <div className="px-6 py-8 text-center text-willou-gray">
                   No hay facturas aún
                 </div>
               ) : (
                 recentInvoices.map((factura) => (
-                  <div key={factura.id} className="px-6 py-4 table-row flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 gradient-willou rounded-xl flex items-center justify-center text-white font-bold">
-                        {factura.numero}
+                  <Link
+                    key={factura.id}
+                    href={`/dashboard/facturas/${factura.id}`}
+                    className="block p-4 rounded-xl border border-gray-100 hover:border-willou-orange/30 hover:shadow-md transition-all duration-200 bg-white"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 gradient-willou rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                          {factura.numero}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-willou-dark">
+                            {factura.cliente?.empresa || factura.cliente?.nombre || 'Sin cliente'}
+                          </p>
+                          <p className="text-sm text-willou-gray">
+                            {formatDate(factura.fecha_emision)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-willou-dark">
-                          {factura.cliente?.empresa || factura.cliente?.nombre || 'Sin cliente'}
-                        </p>
-                        <p className="text-sm text-willou-gray">
-                          {formatDate(factura.fecha_emision)}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="font-bold text-willou-dark text-lg">{formatCurrency(factura.total)}</p>
+                          {factura.estado === 'pendiente' && factura.monto_abonado > 0 && (
+                            <p className="text-xs text-willou-orange">
+                              Abonado: {formatCurrency(factura.monto_abonado)}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={factura.estado === 'pagada' ? 'success' : 'warning'}>
+                          {factura.estado === 'pagada' ? 'Pagada' : factura.estado === 'cancelada' ? 'Cancelada' : 'Pendiente'}
+                        </Badge>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-willou-dark">{formatCurrency(factura.total)}</p>
-                      <Badge variant={factura.estado === 'pagada' ? 'success' : 'warning'}>
-                        {factura.estado === 'pagada' ? 'Pagada' : 'Pendiente'}
-                      </Badge>
-                    </div>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
