@@ -8,14 +8,14 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import toast from 'react-hot-toast'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function DistribucionPage() {
   const { workers, facturas, accountingEntries, workerPayments, updateWorkerPayment, addWorkerPayment, addAccountingEntry, updateFactura } = useAppStore()
   const [filterMes, setFilterMes] = useState(() => new Date().toISOString().slice(0, 7))
   const [loading, setLoading] = useState(false)
   const [editingHours, setEditingHours] = useState<Record<string, number | null>>({})
-  const [savingHours, setSavingHours] = useState<string | null>(null)
+  const [savingWorker, setSavingWorker] = useState<string | null>(null)
 
   const facturasPagadas = useMemo(() => {
     return facturas.filter(f => f.estado === 'pagada' && f.fecha_emision?.startsWith(filterMes))
@@ -75,41 +75,42 @@ export default function DistribucionPage() {
   const totalPagado = workerDistribution.filter(w => w.pagado).reduce((s, w) => s + w.montoTotal, 0)
   const totalPendiente = totalDistribuir - totalPagado
 
-  const handleSaveHours = async (itemId: string, horasReales: number | null) => {
-    setSavingHours(itemId)
-    try {
-      const { error } = await supabase
-        .from('factura_items')
-        .update({ horas_reales: horasReales })
-        .eq('id', itemId)
-      if (error) throw error
+  const handleSaveAllHours = async (workerItems: typeof workerDistribution extends (infer T)[] ? T extends { items: (infer I)[] } ? I[] : never : never) => {
+    const itemsToSave = workerItems.filter(item => item.id && item.id in editingHours)
+    if (itemsToSave.length === 0) return
 
-      // Update local state
-      const updatedFacturas = facturas.map(f => ({
-        ...f,
-        items: f.items?.map(item =>
-          item.id === itemId ? { ...item, horas_reales: horasReales } : item
-        )
-      }))
-      // Force recalculation by updating a factura
-      if (facturas.length > 0) {
-        const factura = facturas.find(f => f.items?.some(item => item.id === itemId))
+    setSavingWorker(itemsToSave[0].worker_id)
+    try {
+      for (const item of itemsToSave) {
+        const { error } = await supabase
+          .from('factura_items')
+          .update({ horas_reales: editingHours[item.id!] })
+          .eq('id', item.id!)
+        if (error) throw error
+      }
+
+      const facturaIds = Array.from(new Set(itemsToSave.map(i => i.factura_id)))
+      for (const fid of facturaIds) {
+        const factura = facturas.find(f => f.id === fid)
         if (factura) {
-          updateFactura({ ...factura, updated_at: new Date().toISOString() })
+          const updatedItems = factura.items?.map(item => {
+            const edited = itemsToSave.find(i => i.id === item.id)
+            if (edited && item.id) {
+              return { ...item, horas_reales: editingHours[item.id] }
+            }
+            return item
+          })
+          updateFactura({ ...factura, items: updatedItems, updated_at: new Date().toISOString() })
         }
       }
 
-      toast.success('Horas actualizadas')
+      setEditingHours({})
+      toast.success(`${itemsToSave.length} horas actualizadas`)
     } catch (err) {
       console.error(err)
       toast.error('Error al guardar horas')
     } finally {
-      setSavingHours(null)
-      setEditingHours(prev => {
-        const next = { ...prev }
-        delete next[itemId]
-        return next
-      })
+      setSavingWorker(null)
     }
   }
 
@@ -278,7 +279,6 @@ export default function DistribucionPage() {
                           <th className="text-left py-2 text-xs font-medium text-willou-gray">Factura</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Horas</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Monto</th>
-                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -286,44 +286,33 @@ export default function DistribucionPage() {
                           const isEditing = item.id in editingHours
                           const horasReales = isEditing ? editingHours[item.id] : item.horas_reales
                           const horasDisplay = horasReales ?? item.horasCalculadas
-                          const isSaving = savingHours === item.id
 
-                           return (
-                            <tr key={idx} className="border-b border-gray-50">
+                          return (
+                            <tr key={idx} className={`border-b border-gray-50 ${isEditing ? 'bg-willou-orange/5' : ''}`}>
                               <td className="py-2 text-willou-dark">{item.descripcion || item.servicio?.nombre || 'Sin nombre'}</td>
                               <td className="py-2 text-willou-gray">#{item.factura_numero}</td>
                               <td className="py-2 text-right">
                                 {isEditing ? (
-                                  <div className="flex items-center gap-1 justify-end">
-                                    <input
-                                      type="number"
-                                      step="0.5"
-                                      min="0"
-                                      value={editingHours[item.id] ?? ''}
-                                      onChange={(e) => setEditingHours(prev => ({
-                                        ...prev,
-                                        [item.id]: e.target.value ? parseFloat(e.target.value) : null
-                                      }))}
-                                      className="w-20 px-2 py-1 text-right rounded-lg border border-willou-orange focus:outline-none focus:ring-2 focus:ring-willou-orange/20 text-sm"
-                                      autoFocus
-                                    />
-                                    <span className="text-xs text-willou-gray">h</span>
-                                    <button
-                                      onClick={() => handleSaveHours(item.id!, editingHours[item.id])}
-                                      disabled={isSaving}
-                                      className="ml-1 px-2 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium"
-                                    >
-                                      {isSaving ? '...' : 'Guardar'}
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingHours(prev => { const n = { ...prev }; delete n[item.id]; return n })}
-                                      className="px-2 py-1 bg-gray-200 text-willou-gray text-xs rounded-lg hover:bg-gray-300 font-medium"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
+                                  <input
+                                    type="number"
+                                    step="0.5"
+                                    min="0"
+                                    value={editingHours[item.id] ?? ''}
+                                    onChange={(e) => setEditingHours(prev => ({
+                                      ...prev,
+                                      [item.id!]: e.target.value ? parseFloat(e.target.value) : null
+                                    }))}
+                                    className="w-20 px-2 py-1 text-right rounded-lg border border-willou-orange focus:outline-none focus:ring-2 focus:ring-willou-orange/20 text-sm"
+                                    autoFocus
+                                  />
                                 ) : (
-                                  <span className="cursor-pointer hover:text-willou-orange transition-colors" onClick={() => setEditingHours(prev => ({ ...prev, [item.id]: item.horas_reales }))}>
+                                  <span
+                                    className="cursor-pointer hover:text-willou-orange transition-colors"
+                                    onClick={() => {
+                                      if (!item.id) return
+                                      setEditingHours(prev => ({ ...prev, [item.id!]: item.horas_reales }))
+                                    }}
+                                  >
                                     {horasDisplay.toFixed(1)}h
                                     {item.horas_reales === null && item.horasCalculadas > 0 && (
                                       <span className="text-xs text-willou-gray ml-1">(est)</span>
@@ -332,7 +321,6 @@ export default function DistribucionPage() {
                                 )}
                               </td>
                               <td className="py-2 text-right text-willou-dark">{formatCurrency(horasDisplay * w.costo_hora)}</td>
-                              <td></td>
                             </tr>
                           )
                         })}
@@ -341,28 +329,39 @@ export default function DistribucionPage() {
                   </div>
                   <p className="text-xs text-willou-gray mt-2">Haz clic en las horas para editarlas. Los valores marcados como (est) son estimaciones del servicio.</p>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <div>
-                      {pagado ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                          ✅ Pagado {paymentRecord?.fecha_pago ? `el ${new Date(paymentRecord.fecha_pago).toLocaleDateString('es-ES')}` : ''}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                          ⏳ Pendiente
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                      <div>
+                        {pagado ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            ✅ Pagado {paymentRecord?.fecha_pago ? `el ${new Date(paymentRecord.fecha_pago).toLocaleDateString('es-ES')}` : ''}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                            ⏳ Pendiente
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-3">
+                        {Object.keys(editingHours).length > 0 && (
+                          <Button
+                            onClick={() => handleSaveAllHours(items)}
+                            disabled={savingWorker === w.id}
+                            className="bg-willou-orange hover:bg-willou-orange/90 text-white"
+                          >
+                            {savingWorker === w.id ? 'Guardando...' : 'Guardar Cambios'}
+                          </Button>
+                        )}
+                        {!pagado && (
+                          <Button
+                            onClick={() => handleMarcarPagado(w.id, montoTotal, horasTotal)}
+                            disabled={loading}
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                          >
+                            {loading ? 'Procesando...' : 'Marcar como Pagado'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {!pagado && (
-                      <Button
-                        onClick={() => handleMarcarPagado(w.id, montoTotal, horasTotal)}
-                        disabled={loading}
-                        className="bg-green-500 hover:bg-green-600 text-white"
-                      >
-                        {loading ? 'Procesando...' : 'Marcar como Pagado'}
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </Card>
             ))}
