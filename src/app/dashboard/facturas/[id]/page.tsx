@@ -326,10 +326,9 @@ export default function FacturaDetailPage() {
                         <td className="py-3 px-2" style={{ color: '#232323' }}>{index + 1}</td>
                         <td className="py-3 px-2">
                           <div style={{ color: '#232323' }}>{item.descripcion}</div>
-                          {(item.pricing_mode && item.pricing_mode !== 'fijo') && (
+                          {worker && (
                             <div style={{ fontSize: 11, color: '#fb5a2e' }}>
-                              {item.pricing_mode === 'horas_internas' ? '⏱ Horas' : '🆓 Freelancer'}
-                              {worker && ` · ${worker.nombre}`}
+                              👤 {worker.nombre} ({worker.tipo === 'interno' ? 'Interno' : 'Freelancer'})
                             </div>
                           )}
                         </td>

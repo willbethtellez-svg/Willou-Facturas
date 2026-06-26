@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store'
 import { supabase, formatCurrency, formatDate } from '@/lib/supabase'
+import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -148,9 +149,16 @@ export default function ContabilidadPage() {
         title="Contabilidad"
         subtitle="Libro de ingresos y egresos"
         actions={
-          <Button onClick={() => handleOpenModal()} className="bg-willou-orange hover:bg-willou-orange/90 text-white">
-            + Nueva Entrada
-          </Button>
+          <div className="flex gap-3">
+            <Link href="/dashboard/contabilidad/categorias">
+              <Button variant="outline">
+                Gestionar Categorías
+              </Button>
+            </Link>
+            <Button onClick={() => handleOpenModal()} className="bg-willou-orange hover:bg-willou-orange/90 text-white">
+              + Nueva Entrada
+            </Button>
+          </div>
         }
       />
 
