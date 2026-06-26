@@ -36,7 +36,8 @@ export default function ServiciosPage() {
     const costo = parseFloat(formData.costo_hora_agencia) || 0
     const utilidad = parseFloat(formData.porcentaje_utilidad) || 0
     if (horas > 0 && costo > 0) {
-      return horas * costo * (1 + utilidad / 100)
+      const safeUtilidad = Math.min(utilidad, 99)
+      return horas * costo / (1 - safeUtilidad / 100)
     }
     return null
   }, [formData.horas_estimadas, formData.costo_hora_agencia, formData.porcentaje_utilidad])
@@ -318,7 +319,7 @@ export default function ServiciosPage() {
                   <p className="text-sm text-willou-gray">Precio sugerido</p>
                   <p className="text-lg font-bold text-willou-orange">{formatCurrency(precioSugerido)}</p>
                   <p className="text-xs text-willou-gray mt-1">
-                    {formData.horas_estimadas}h × {formatCurrency(parseFloat(formData.costo_hora_agencia) || 0)} × {1 + (parseFloat(formData.porcentaje_utilidad) || 0) / 100}% utilidad
+                    Costo total: {formatCurrency((parseFloat(formData.horas_estimadas) || 0) * (parseFloat(formData.costo_hora_agencia) || 0))} ÷ {1 - (parseFloat(formData.porcentaje_utilidad) || 0) / 100} de utilidad
                   </p>
                 </div>
               )}
