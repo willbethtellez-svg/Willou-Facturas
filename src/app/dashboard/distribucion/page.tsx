@@ -278,7 +278,7 @@ export default function DistribucionPage() {
                           <th className="text-left py-2 text-xs font-medium text-willou-gray">Factura</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Horas</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Monto</th>
-                          <th className="w-16"></th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -288,7 +288,7 @@ export default function DistribucionPage() {
                           const horasDisplay = horasReales ?? item.horasCalculadas
                           const isSaving = savingHours === item.id
 
-                          return (
+                           return (
                             <tr key={idx} className="border-b border-gray-50">
                               <td className="py-2 text-willou-dark">{item.descripcion || item.servicio?.nombre || 'Sin nombre'}</td>
                               <td className="py-2 text-willou-gray">#{item.factura_numero}</td>
@@ -308,6 +308,19 @@ export default function DistribucionPage() {
                                       autoFocus
                                     />
                                     <span className="text-xs text-willou-gray">h</span>
+                                    <button
+                                      onClick={() => handleSaveHours(item.id!, editingHours[item.id])}
+                                      disabled={isSaving}
+                                      className="ml-1 px-2 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium"
+                                    >
+                                      {isSaving ? '...' : 'Guardar'}
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingHours(prev => { const n = { ...prev }; delete n[item.id]; return n })}
+                                      className="px-2 py-1 bg-gray-200 text-willou-gray text-xs rounded-lg hover:bg-gray-300 font-medium"
+                                    >
+                                      ✕
+                                    </button>
                                   </div>
                                 ) : (
                                   <span className="cursor-pointer hover:text-willou-orange transition-colors" onClick={() => setEditingHours(prev => ({ ...prev, [item.id]: item.horas_reales }))}>
@@ -319,23 +332,14 @@ export default function DistribucionPage() {
                                 )}
                               </td>
                               <td className="py-2 text-right text-willou-dark">{formatCurrency(horasDisplay * w.costo_hora)}</td>
-                              <td className="py-2 text-right">
-                                {isEditing && (
-                                  <button
-                                    onClick={() => handleSaveHours(item.id!, editingHours[item.id])}
-                                    disabled={isSaving}
-                                    className="text-green-500 hover:text-green-700 text-xs font-medium disabled:opacity-50"
-                                  >
-                                    {isSaving ? '...' : '✓'}
-                                  </button>
-                                )}
-                              </td>
+                              <td></td>
                             </tr>
                           )
                         })}
                       </tbody>
                     </table>
                   </div>
+                  <p className="text-xs text-willou-gray mt-2">Haz clic en las horas para editarlas. Los valores marcados como (est) son estimaciones del servicio.</p>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <div>
