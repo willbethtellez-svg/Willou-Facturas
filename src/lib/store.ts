@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Cliente, Servicio, Factura, Configuracion, Worker, ExpenseCategory, AccountingEntry } from '@/types';
+import { Cliente, Servicio, Factura, Configuracion, Worker, ExpenseCategory, AccountingEntry, WorkerMonthlyPayment } from '@/types';
 
 interface AppState {
   // Auth
@@ -48,6 +48,12 @@ interface AppState {
   addAccountingEntry: (entry: AccountingEntry) => void;
   updateAccountingEntry: (entry: AccountingEntry) => void;
   deleteAccountingEntry: (id: string) => void;
+
+  // Worker Payments
+  workerPayments: WorkerMonthlyPayment[];
+  setWorkerPayments: (payments: WorkerMonthlyPayment[]) => void;
+  addWorkerPayment: (payment: WorkerMonthlyPayment) => void;
+  updateWorkerPayment: (payment: WorkerMonthlyPayment) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -118,5 +124,15 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   deleteAccountingEntry: (id) => set((state) => ({
     accountingEntries: state.accountingEntries.filter((e) => e.id !== id),
+  })),
+
+  // Worker Payments
+  workerPayments: [],
+  setWorkerPayments: (payments) => set({ workerPayments: payments }),
+  addWorkerPayment: (payment) => set((state) => ({
+    workerPayments: [...state.workerPayments, payment],
+  })),
+  updateWorkerPayment: (payment) => set((state) => ({
+    workerPayments: state.workerPayments.map((p) => (p.id === payment.id ? payment : p)),
   })),
 }));

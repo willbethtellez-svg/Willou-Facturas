@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAppStore } from '@/lib/store'
 import { supabase, formatCurrency } from '@/lib/supabase'
 import { Header } from '@/components/layout/Header'
@@ -13,7 +13,7 @@ import toast from 'react-hot-toast'
 import type { Worker } from '@/types'
 
 export default function TrabajadoresPage() {
-  const { workers, addWorker, updateWorker, deleteWorker } = useAppStore()
+  const { workers, addWorker, updateWorker, deleteWorker, facturas, workerPayments } = useAppStore()
   const [search, setSearch] = useState('')
   const [filterTipo, setFilterTipo] = useState<string>('todos')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -36,6 +36,22 @@ export default function TrabajadoresPage() {
     const matchesTipo = filterTipo === 'todos' || w.tipo === filterTipo
     return matchesSearch && matchesTipo
   })
+
+  const workerBalances = useMemo(() => {
+    const balances: Record<string, { horasTrabajadas: number; horasPagadas: number; horasPendientes: number; montoPendiente: number }> = {}
+    
+    workers.forEach(w => {
+      const allItems = facturas.flatMap(f => f.items || []).filter(item => item.worker_id === w.id)
+      const horasTrabajadas = allItems.reduce((s, i) => s + (i.horas_reales || (i.servicio?.horas_estimadas || 0) * (i.cantidad || 1) || 0), 0)
+      const horasPagadas = workerPayments.filter(wp => wp.worker_id === w.id && wp.pagado).reduce((s, wp) => s + wp.horas_total, 0)
+      const horasPendientes = Math.max(0, horasTrabajadas - horasPagadas)
+      const montoPendiente = horasPendientes * w.costo_hora
+      
+      balances[w.id] = { horasTrabajadas, horasPagadas, horasPendientes, montoPendiente }
+    })
+    
+    return balances
+  }, [workers, facturas, workerPayments])
 
   const handleOpenModal = (worker?: Worker) => {
     if (worker) {
@@ -227,6 +243,19 @@ export default function TrabajadoresPage() {
 
                   {worker.notas && (
                     <p className="text-xs text-willou-gray mt-3 pt-3 border-t border-gray-100">{worker.notas}</p>
+                  )}
+
+                  {workerBalances[worker.id] && workerBalances[worker.id].horasPendientes > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-willou-gray">Horas pendientes</span>
+                        <span className="font-medium text-willou-dark">{workerBalances[worker.id].horasPendientes.toFixed(1)}h</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-willou-gray">Monto pendiente</span>
+                        <span className="font-bold text-orange-600">{formatCurrency(workerBalances[worker.id].montoPendiente)}</span>
+                      </div>
+                    </div>
                   )}
 
                   {!worker.activo && (

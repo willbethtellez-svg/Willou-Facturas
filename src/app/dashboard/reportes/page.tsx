@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function ReportesPage() {
-  const { workers, facturas, accountingEntries } = useAppStore()
+  const { workers, facturas, accountingEntries, workerPayments } = useAppStore()
   const [filterMes, setFilterMes] = useState(() => new Date().toISOString().slice(0, 7))
 
   const reportesWorkers = useMemo(() => {
@@ -17,18 +17,20 @@ export default function ReportesPage() {
     const entriesDelMes = accountingEntries.filter(e => e.fecha?.startsWith(filterMes))
 
     const ingresosMes = entriesDelMes.filter(e => e.tipo === 'ingreso').reduce((s, e) => s + e.monto, 0)
-    const egresosMes = entriesDelMes.filter(e => e.tipo === 'egreso').reduce((s, e) => s + e.monto, 0)
     const comisionesMes = entriesDelMes.reduce((s, e) => s + (e.banco_fee || 0), 0)
-    const utilidadNeta = ingresosMes - egresosMes - comisionesMes
+    const gastosOperativos = entriesDelMes.filter(e => e.tipo === 'egreso' && !e.worker_id).reduce((s, e) => s + e.monto, 0)
+    const pagosWorkers = workerPayments.filter(wp => wp.mes === filterMes && wp.pagado).reduce((s, wp) => s + wp.monto_total, 0)
+    const utilidadNeta = ingresosMes - comisionesMes - gastosOperativos - pagosWorkers
+    const margen = ingresosMes > 0 ? (utilidadNeta / ingresosMes) * 100 : 0
 
     const workerStats = workers.map(w => {
       const itemsDelWorker = facturasDelMes
         .flatMap(f => f.items || [])
         .filter(item => item.worker_id === w.id)
 
-      const horas = itemsDelWorker.reduce((s, i) => s + (i.horas_reales || 0), 0)
+      const horas = itemsDelWorker.reduce((s, i) => s + (i.horas_reales || (i.servicio?.horas_estimadas || 0) * (i.cantidad || 1) || 0), 0)
       const ingresosGenerados = itemsDelWorker.reduce((s, i) => s + i.subtotal, 0)
-      const costos = itemsDelWorker.reduce((s, i) => s + (i.costo_worker || 0), 0)
+      const costos = horas * w.costo_hora
       const utilidad = ingresosGenerados - costos
 
       return {
@@ -42,8 +44,8 @@ export default function ReportesPage() {
       }
     }).filter(w => w.horas > 0 || w.ingresosGenerados > 0)
 
-    return { workerStats, ingresosMes, egresosMes, comisionesMes, utilidadNeta }
-  }, [workers, facturas, accountingEntries, filterMes])
+    return { workerStats, ingresosMes, comisionesMes, gastosOperativos, pagosWorkers, utilidadNeta, margen }
+  }, [workers, facturas, accountingEntries, workerPayments, filterMes])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,34 +61,73 @@ export default function ReportesPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-sm text-willou-gray">Ingresos del Mes</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(reportesWorkers.ingresosMes)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-sm text-willou-gray">Egresos del Mes</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(reportesWorkers.egresosMes)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-sm text-willou-gray">Comisiones</p>
-              <p className="text-xl font-bold text-willou-gray">{formatCurrency(reportesWorkers.comisionesMes)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-sm text-willou-gray">Utilidad Neta</p>
-              <p className={`text-xl font-bold ${reportesWorkers.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(reportesWorkers.utilidadNeta)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* P&L Summary */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold text-willou-dark mb-4">P&L del Mes</h2>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="p-4 rounded-xl bg-green-50">
+                <p className="text-sm text-willou-gray">Ingresos</p>
+                <p className="text-xl font-bold text-green-600">{formatCurrency(reportesWorkers.ingresosMes)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-red-50">
+                <p className="text-sm text-willou-gray">Comisiones</p>
+                <p className="text-xl font-bold text-red-500">{formatCurrency(reportesWorkers.comisionesMes)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-red-50">
+                <p className="text-sm text-willou-gray">Gastos Operativos</p>
+                <p className="text-xl font-bold text-red-500">{formatCurrency(reportesWorkers.gastosOperativos)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-red-50">
+                <p className="text-sm text-willou-gray">Pago Workers</p>
+                <p className="text-xl font-bold text-red-500">{formatCurrency(reportesWorkers.pagosWorkers)}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-willou-purple/20">
+                <p className="text-sm text-willou-gray">Utilidad Neta</p>
+                <p className={`text-xl font-bold ${reportesWorkers.utilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(reportesWorkers.utilidadNeta)}
+                </p>
+                <p className={`text-xs ${reportesWorkers.margen >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {reportesWorkers.margen.toFixed(1)}% margen
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico P&L */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold text-willou-dark mb-4">Composición del P&L</h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { name: 'Ingresos', valor: reportesWorkers.ingresosMes },
+                  { name: 'Comisiones', valor: -reportesWorkers.comisionesMes },
+                  { name: 'Gastos', valor: -reportesWorkers.gastosOperativos },
+                  { name: 'Workers', valor: -reportesWorkers.pagosWorkers },
+                  { name: 'Utilidad', valor: reportesWorkers.utilidadNeta },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value: any) => typeof value === 'number' ? formatCurrency(value) : value} />
+                  <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+                    {[
+                      { fill: '#22c55e' },
+                      { fill: '#ef4444' },
+                      { fill: '#f59e0b' },
+                      { fill: '#fb5a2e' },
+                      { fill: reportesWorkers.utilidadNeta >= 0 ? '#22c55e' : '#ef4444' },
+                    ].map((entry, index) => (
+                      <Bar key={index} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
         {reportesWorkers.workerStats.length === 0 ? (
           <EmptyState icon="📈" title="Sin datos para este mes" description="No hay actividad de trabajadores en este período" />
@@ -103,7 +144,7 @@ export default function ReportesPage() {
                         <th className="text-left py-3 px-4 text-sm font-medium text-willou-gray">Tipo</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-willou-gray">Horas</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-willou-gray">Ingresos</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-willou-gray">Costos</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-willou-gray">Costo</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-willou-gray">Utilidad</th>
                       </tr>
                     </thead>
@@ -140,7 +181,7 @@ export default function ReportesPage() {
                       <Tooltip formatter={(value: any) => typeof value === 'number' ? formatCurrency(value) : value} />
                       <Legend />
                       <Bar dataKey="ingresosGenerados" name="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="costos" name="Costos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="costos" name="Costo Worker" fill="#ef4444" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="utilidad" name="Utilidad" fill="#fb5a2e" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

@@ -15,7 +15,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const { setAuthenticated, setConfiguracion, setClientes, setServicios, setFacturas, setWorkers, setExpenseCategories, setAccountingEntries } = useAppStore();
+  const { setAuthenticated, setConfiguracion, setClientes, setServicios, setFacturas, setWorkers, setExpenseCategories, setAccountingEntries, setWorkerPayments } = useAppStore();
 
   useEffect(() => {
     // Check authentication
@@ -76,6 +76,13 @@ export default function DashboardLayout({
           .select('*, categoria:expense_categories(*)')
           .order('fecha', { ascending: false });
         if (entries) setAccountingEntries(entries);
+
+        // Load worker payments
+        const { data: wPayments } = await supabase
+          .from('worker_monthly_payments')
+          .select('*, worker:workers(*)')
+          .order('created_at', { ascending: false });
+        if (wPayments) setWorkerPayments(wPayments);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {

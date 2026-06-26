@@ -114,6 +114,21 @@ export interface AccountingEntry {
   categoria?: ExpenseCategory;
 }
 
+export interface WorkerMonthlyPayment {
+  id: string;
+  worker_id: string;
+  mes: string;
+  horas_total: number;
+  monto_total: number;
+  pagado: boolean;
+  fecha_pago: string | null;
+  accounting_entry_id: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+  worker?: Worker;
+}
+
 export interface Asset {
   id: string;
   nombre: string;
