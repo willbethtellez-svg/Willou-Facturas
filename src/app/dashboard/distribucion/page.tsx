@@ -11,9 +11,11 @@ import toast from 'react-hot-toast'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function DistribucionPage() {
-  const { workers, facturas, accountingEntries, workerPayments, updateWorkerPayment, addWorkerPayment, addAccountingEntry } = useAppStore()
+  const { workers, facturas, accountingEntries, workerPayments, updateWorkerPayment, addWorkerPayment, addAccountingEntry, updateFactura } = useAppStore()
   const [filterMes, setFilterMes] = useState(() => new Date().toISOString().slice(0, 7))
   const [loading, setLoading] = useState(false)
+  const [editingHours, setEditingHours] = useState<Record<string, number | null>>({})
+  const [savingHours, setSavingHours] = useState<string | null>(null)
 
   const facturasPagadas = useMemo(() => {
     return facturas.filter(f => f.estado === 'pagada' && f.fecha_emision?.startsWith(filterMes))
@@ -72,6 +74,44 @@ export default function DistribucionPage() {
   const totalDistribuir = workerDistribution.reduce((s, w) => s + w.montoTotal, 0)
   const totalPagado = workerDistribution.filter(w => w.pagado).reduce((s, w) => s + w.montoTotal, 0)
   const totalPendiente = totalDistribuir - totalPagado
+
+  const handleSaveHours = async (itemId: string, horasReales: number | null) => {
+    setSavingHours(itemId)
+    try {
+      const { error } = await supabase
+        .from('factura_items')
+        .update({ horas_reales: horasReales })
+        .eq('id', itemId)
+      if (error) throw error
+
+      // Update local state
+      const updatedFacturas = facturas.map(f => ({
+        ...f,
+        items: f.items?.map(item =>
+          item.id === itemId ? { ...item, horas_reales: horasReales } : item
+        )
+      }))
+      // Force recalculation by updating a factura
+      if (facturas.length > 0) {
+        const factura = facturas.find(f => f.items?.some(item => item.id === itemId))
+        if (factura) {
+          updateFactura({ ...factura, updated_at: new Date().toISOString() })
+        }
+      }
+
+      toast.success('Horas actualizadas')
+    } catch (err) {
+      console.error(err)
+      toast.error('Error al guardar horas')
+    } finally {
+      setSavingHours(null)
+      setEditingHours(prev => {
+        const next = { ...prev }
+        delete next[itemId]
+        return next
+      })
+    }
+  }
 
   const handleMarcarPagado = async (workerId: string, montoTotal: number, horasTotal: number) => {
     setLoading(true)
@@ -238,17 +278,61 @@ export default function DistribucionPage() {
                           <th className="text-left py-2 text-xs font-medium text-willou-gray">Factura</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Horas</th>
                           <th className="text-right py-2 text-xs font-medium text-willou-gray">Monto</th>
+                          <th className="w-16"></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {items.map((item, idx) => (
-                          <tr key={idx} className="border-b border-gray-50">
-                            <td className="py-2 text-willou-dark">{item.descripcion || item.servicio?.nombre || 'Sin nombre'}</td>
-                            <td className="py-2 text-willou-gray">#{item.factura_numero}</td>
-                            <td className="py-2 text-right text-willou-dark">{item.horasCalculadas.toFixed(1)}h</td>
-                            <td className="py-2 text-right text-willou-dark">{formatCurrency(item.horasCalculadas * w.costo_hora)}</td>
-                          </tr>
-                        ))}
+                        {items.map((item, idx) => {
+                          const isEditing = item.id in editingHours
+                          const horasReales = isEditing ? editingHours[item.id] : item.horas_reales
+                          const horasDisplay = horasReales ?? item.horasCalculadas
+                          const isSaving = savingHours === item.id
+
+                          return (
+                            <tr key={idx} className="border-b border-gray-50">
+                              <td className="py-2 text-willou-dark">{item.descripcion || item.servicio?.nombre || 'Sin nombre'}</td>
+                              <td className="py-2 text-willou-gray">#{item.factura_numero}</td>
+                              <td className="py-2 text-right">
+                                {isEditing ? (
+                                  <div className="flex items-center gap-1 justify-end">
+                                    <input
+                                      type="number"
+                                      step="0.5"
+                                      min="0"
+                                      value={editingHours[item.id] ?? ''}
+                                      onChange={(e) => setEditingHours(prev => ({
+                                        ...prev,
+                                        [item.id]: e.target.value ? parseFloat(e.target.value) : null
+                                      }))}
+                                      className="w-20 px-2 py-1 text-right rounded-lg border border-willou-orange focus:outline-none focus:ring-2 focus:ring-willou-orange/20 text-sm"
+                                      autoFocus
+                                    />
+                                    <span className="text-xs text-willou-gray">h</span>
+                                  </div>
+                                ) : (
+                                  <span className="cursor-pointer hover:text-willou-orange transition-colors" onClick={() => setEditingHours(prev => ({ ...prev, [item.id]: item.horas_reales }))}>
+                                    {horasDisplay.toFixed(1)}h
+                                    {item.horas_reales === null && item.horasCalculadas > 0 && (
+                                      <span className="text-xs text-willou-gray ml-1">(est)</span>
+                                    )}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 text-right text-willou-dark">{formatCurrency(horasDisplay * w.costo_hora)}</td>
+                              <td className="py-2 text-right">
+                                {isEditing && (
+                                  <button
+                                    onClick={() => handleSaveHours(item.id!, editingHours[item.id])}
+                                    disabled={isSaving}
+                                    className="text-green-500 hover:text-green-700 text-xs font-medium disabled:opacity-50"
+                                  >
+                                    {isSaving ? '...' : '✓'}
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>

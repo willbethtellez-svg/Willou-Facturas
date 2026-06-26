@@ -19,6 +19,7 @@ interface ItemFactura {
   precio_unitario: number
   subtotal: number
   worker_id: string
+  horas_reales: number | null
 }
 
 export default function EditarFacturaPage() {
@@ -71,7 +72,8 @@ export default function EditarFacturaPage() {
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
         subtotal: item.subtotal,
-        worker_id: item.worker_id || ''
+        worker_id: item.worker_id || '',
+        horas_reales: item.horas_reales ?? null
       })))
     } catch (err) {
       console.error(err)
@@ -85,7 +87,7 @@ export default function EditarFacturaPage() {
   const opcionesWorkers = activeWorkers.map(w => ({ value: w.id, label: `${w.nombre} (${w.tipo === 'interno' ? 'Interno' : 'Freelancer'} - ${formatCurrency(w.costo_hora)}/h)` }))
 
   const agregarItem = () => {
-    setItems([...items, { servicio_id: '', descripcion: '', cantidad: 1, precio_unitario: 0, subtotal: 0, worker_id: '' }])
+    setItems([...items, { servicio_id: '', descripcion: '', cantidad: 1, precio_unitario: 0, subtotal: 0, worker_id: '', horas_reales: null }])
   }
 
   const eliminarItem = (index: number) => setItems(items.filter((_, i) => i !== index))
@@ -103,6 +105,11 @@ export default function EditarFacturaPage() {
     }
     item.subtotal = item.cantidad * item.precio_unitario
     setItems(nuevosItems)
+  }
+
+  const getHorasEstimadas = (item: ItemFactura): number => {
+    const servicio = servicios.find(s => s.id === item.servicio_id)
+    return servicio?.horas_estimadas ? servicio.horas_estimadas * item.cantidad : 0
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
@@ -128,7 +135,8 @@ export default function EditarFacturaPage() {
           cantidad: item.cantidad,
           precio_unitario: item.precio_unitario,
           subtotal: item.subtotal,
-          worker_id: item.worker_id || null
+          worker_id: item.worker_id || null,
+          horas_reales: item.horas_reales
         }
         if (item.id) {
           await supabase.from('factura_items').update(itemData).eq('id', item.id)
@@ -205,6 +213,7 @@ export default function EditarFacturaPage() {
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Servicio</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Worker</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Cant.</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Horas</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Precio</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Subtotal</th>
                           <th className="text-right py-3 px-2"></th>
@@ -225,6 +234,21 @@ export default function EditarFacturaPage() {
                               </select>
                             </td>
                             <td className="py-3 px-2" style={{ width: 70 }}><Input type="number" min="1" value={item.cantidad} onChange={(e) => actualizarItem(index, 'cantidad', parseInt(e.target.value) || 1)} /></td>
+                            <td className="py-3 px-2" style={{ width: 90 }}>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  value={item.horas_reales ?? ''}
+                                  onChange={(e) => actualizarItem(index, 'horas_reales', e.target.value ? parseFloat(e.target.value) : null)}
+                                  placeholder={getHorasEstimadas(item).toFixed(1)}
+                                />
+                                {item.horas_reales === null && getHorasEstimadas(item) > 0 && (
+                                  <span className="absolute -bottom-5 left-0 text-xs text-willou-gray">est: {getHorasEstimadas(item).toFixed(1)}h</span>
+                                )}
+                              </div>
+                            </td>
                             <td className="py-3 px-2" style={{ width: 110 }}><Input type="number" step="0.01" value={item.precio_unitario} onChange={(e) => actualizarItem(index, 'precio_unitario', parseFloat(e.target.value) || 0)} /></td>
                             <td className="py-3 px-2 text-sm font-medium text-willou-dark" style={{ width: 90 }}>{formatCurrency(item.subtotal)}</td>
                             <td className="py-3 px-2 text-right"><button onClick={() => eliminarItem(index)} className="text-red-500 hover:text-red-700 p-1">✕</button></td>

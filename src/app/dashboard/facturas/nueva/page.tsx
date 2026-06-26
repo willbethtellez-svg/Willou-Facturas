@@ -17,6 +17,7 @@ interface ItemFactura {
   precio_unitario: number
   subtotal: number
   worker_id: string
+  horas_reales: number | null
 }
 
 export default function NuevaFacturaPage() {
@@ -74,7 +75,8 @@ export default function NuevaFacturaPage() {
       cantidad: 1,
       precio_unitario: 0,
       subtotal: 0,
-      worker_id: ''
+      worker_id: '',
+      horas_reales: null
     }])
   }
 
@@ -97,6 +99,11 @@ export default function NuevaFacturaPage() {
 
     item.subtotal = item.cantidad * item.precio_unitario
     setItems(nuevosItems)
+  }
+
+  const getHorasEstimadas = (item: ItemFactura): number => {
+    const servicio = servicios.find(s => s.id === item.servicio_id)
+    return servicio?.horas_estimadas ? servicio.horas_estimadas * item.cantidad : 0
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
@@ -136,7 +143,8 @@ export default function NuevaFacturaPage() {
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
         subtotal: item.subtotal,
-        worker_id: item.worker_id || null
+        worker_id: item.worker_id || null,
+        horas_reales: item.horas_reales
       }))
 
       const { error: itemsError } = await supabase
@@ -208,6 +216,7 @@ export default function NuevaFacturaPage() {
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Servicio</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Worker</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Cant.</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Horas</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Precio</th>
                           <th className="text-left py-3 px-2 text-sm font-medium text-willou-gray">Subtotal</th>
                           <th className="text-right py-3 px-2 text-sm font-medium text-willou-gray"></th>
@@ -246,6 +255,21 @@ export default function NuevaFacturaPage() {
                             </td>
                             <td className="py-3 px-2" style={{ width: 70 }}>
                               <Input type="number" min="1" value={item.cantidad} onChange={(e) => actualizarItem(index, 'cantidad', parseInt(e.target.value) || 1)} />
+                            </td>
+                            <td className="py-3 px-2" style={{ width: 90 }}>
+                              <div className="relative">
+                                <Input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  value={item.horas_reales ?? ''}
+                                  onChange={(e) => actualizarItem(index, 'horas_reales', e.target.value ? parseFloat(e.target.value) : null)}
+                                  placeholder={getHorasEstimadas(item).toFixed(1)}
+                                />
+                                {item.horas_reales === null && getHorasEstimadas(item) > 0 && (
+                                  <span className="absolute -bottom-5 left-0 text-xs text-willou-gray">est: {getHorasEstimadas(item).toFixed(1)}h</span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-3 px-2" style={{ width: 110 }}>
                               <Input type="number" step="0.01" value={item.precio_unitario} onChange={(e) => actualizarItem(index, 'precio_unitario', parseFloat(e.target.value) || 0)} />
