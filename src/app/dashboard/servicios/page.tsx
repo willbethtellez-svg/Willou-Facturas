@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAppStore } from '@/lib/store'
 import { supabase, formatCurrency } from '@/lib/supabase'
 import { Header } from '@/components/layout/Header'
@@ -20,12 +20,26 @@ export default function ServiciosPage() {
   const [editingServicio, setEditingServicio] = useState<Servicio | null>(null)
   const [deletingServicio, setDeletingServicio] = useState<Servicio | null>(null)
   const [loading, setLoading] = useState(false)
+  const [useHourlyPricing, setUseHourlyPricing] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
     precio: '',
-    categoria: ''
+    categoria: '',
+    horas_estimadas: '',
+    costo_hora_agencia: '',
+    porcentaje_utilidad: '30'
   })
+
+  const precioSugerido = useMemo(() => {
+    const horas = parseFloat(formData.horas_estimadas) || 0
+    const costo = parseFloat(formData.costo_hora_agencia) || 0
+    const utilidad = parseFloat(formData.porcentaje_utilidad) || 0
+    if (horas > 0 && costo > 0) {
+      return horas * costo * (1 + utilidad / 100)
+    }
+    return null
+  }, [formData.horas_estimadas, formData.costo_hora_agencia, formData.porcentaje_utilidad])
 
   const filteredServicios = servicios.filter(s =>
     s.nombre.toLowerCase().includes(search.toLowerCase()) ||
@@ -36,15 +50,21 @@ export default function ServiciosPage() {
   const handleOpenModal = (servicio?: Servicio) => {
     if (servicio) {
       setEditingServicio(servicio)
+      const hasHourlyData = servicio.horas_estimadas != null && servicio.costo_hora_agencia != null
+      setUseHourlyPricing(hasHourlyData)
       setFormData({
         nombre: servicio.nombre,
         descripcion: servicio.descripcion || '',
         precio: servicio.precio.toString(),
-        categoria: servicio.categoria || ''
+        categoria: servicio.categoria || '',
+        horas_estimadas: servicio.horas_estimadas?.toString() || '',
+        costo_hora_agencia: servicio.costo_hora_agencia?.toString() || '',
+        porcentaje_utilidad: servicio.porcentaje_utilidad?.toString() || '30'
       })
     } else {
       setEditingServicio(null)
-      setFormData({ nombre: '', descripcion: '', precio: '', categoria: '' })
+      setUseHourlyPricing(false)
+      setFormData({ nombre: '', descripcion: '', precio: '', categoria: '', horas_estimadas: '', costo_hora_agencia: '', porcentaje_utilidad: '30' })
     }
     setIsModalOpen(true)
   }
@@ -52,29 +72,38 @@ export default function ServiciosPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setEditingServicio(null)
-    setFormData({ nombre: '', descripcion: '', precio: '', categoria: '' })
+    setFormData({ nombre: '', descripcion: '', precio: '', categoria: '', horas_estimadas: '', costo_hora_agencia: '', porcentaje_utilidad: '30' })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!formData.nombre.trim()) {
       toast.error('El nombre es obligatorio')
       return
     }
-
     if (!formData.precio || parseFloat(formData.precio) < 0) {
       toast.error('Ingresa un precio válido')
       return
     }
-
     setLoading(true)
 
-    const servicioData = {
+    const servicioData: any = {
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion.trim() || null,
       precio: parseFloat(formData.precio),
-      categoria: formData.categoria.trim() || null
+      categoria: formData.categoria.trim() || null,
+    }
+
+    if (useHourlyPricing) {
+      servicioData.horas_estimadas = parseFloat(formData.horas_estimadas) || null
+      servicioData.costo_hora_agencia = parseFloat(formData.costo_hora_agencia) || null
+      servicioData.porcentaje_utilidad = parseFloat(formData.porcentaje_utilidad) || null
+      servicioData.precio_sugerido = precioSugerido
+    } else {
+      servicioData.horas_estimadas = null
+      servicioData.costo_hora_agencia = null
+      servicioData.porcentaje_utilidad = null
+      servicioData.precio_sugerido = null
     }
 
     try {
@@ -83,9 +112,7 @@ export default function ServiciosPage() {
           .from('servicios')
           .update({ ...servicioData, updated_at: new Date().toISOString() })
           .eq('id', editingServicio.id)
-
         if (error) throw error
-
         updateServicio({ ...editingServicio, ...servicioData })
         toast.success('Servicio actualizado')
       } else {
@@ -94,13 +121,10 @@ export default function ServiciosPage() {
           .insert([servicioData])
           .select()
           .single()
-
         if (error) throw error
-
         addServicio(data)
         toast.success('Servicio creado')
       }
-
       handleCloseModal()
     } catch (error) {
       toast.error('Error al guardar el servicio')
@@ -111,17 +135,13 @@ export default function ServiciosPage() {
 
   const handleDelete = async () => {
     if (!deletingServicio) return
-
     setLoading(true)
-
     try {
       const { error } = await supabase
         .from('servicios')
         .delete()
         .eq('id', deletingServicio.id)
-
       if (error) throw error
-
       deleteServicio(deletingServicio.id)
       toast.success('Servicio eliminado')
       setIsDeleteModalOpen(false)
@@ -205,6 +225,27 @@ export default function ServiciosPage() {
                       </span>
                     )}
                   </div>
+
+                  {servicio.horas_estimadas && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-willou-gray">Horas est.</span>
+                        <p className="font-medium text-willou-dark">{servicio.horas_estimadas}h</p>
+                      </div>
+                      <div>
+                        <span className="text-willou-gray">$/hora agencia</span>
+                        <p className="font-medium text-willou-dark">{formatCurrency(servicio.costo_hora_agencia || 0)}</p>
+                      </div>
+                      <div>
+                        <span className="text-willou-gray">Utilidad</span>
+                        <p className="font-medium text-willou-dark">{servicio.porcentaje_utilidad || 30}%</p>
+                      </div>
+                      <div>
+                        <span className="text-willou-gray">Sugerido</span>
+                        <p className="font-medium text-willou-orange">{formatCurrency(servicio.precio_sugerido || 0)}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
@@ -230,13 +271,76 @@ export default function ServiciosPage() {
             onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
             placeholder="Descripción del servicio"
           />
-          <Input
-            label="Precio"
-            type="number"
-            value={formData.precio}
-            onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
-            placeholder="0.00"
-          />
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useHourlyPricing}
+                onChange={(e) => setUseHourlyPricing(e.target.checked)}
+                className="rounded text-willou-orange focus:ring-willou-orange"
+              />
+              <span className="text-sm font-medium text-willou-dark">Usar pricing por horas</span>
+            </label>
+          </div>
+          {useHourlyPricing ? (
+            <>
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Horas estimadas"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={formData.horas_estimadas}
+                  onChange={(e) => setFormData({ ...formData, horas_estimadas: e.target.value })}
+                  placeholder="0"
+                />
+                <Input
+                  label="$ / hora agencia"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.costo_hora_agencia}
+                  onChange={(e) => setFormData({ ...formData, costo_hora_agencia: e.target.value })}
+                  placeholder="0.00"
+                />
+                <Input
+                  label="% Utilidad"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formData.porcentaje_utilidad}
+                  onChange={(e) => setFormData({ ...formData, porcentaje_utilidad: e.target.value })}
+                  placeholder="30"
+                />
+              </div>
+              {precioSugerido !== null && (
+                <div className="p-3 rounded-lg bg-willou-purple/20">
+                  <p className="text-sm text-willou-gray">Precio sugerido</p>
+                  <p className="text-lg font-bold text-willou-orange">{formatCurrency(precioSugerido)}</p>
+                  <p className="text-xs text-willou-gray mt-1">
+                    {formData.horas_estimadas}h × {formatCurrency(parseFloat(formData.costo_hora_agencia) || 0)} × {1 + (parseFloat(formData.porcentaje_utilidad) || 0) / 100}% utilidad
+                  </p>
+                </div>
+              )}
+              <Input
+                label="Precio final (puedes sobreescribir)"
+                type="number"
+                step="0.01"
+                value={formData.precio}
+                onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                placeholder={precioSugerido ? precioSugerido.toFixed(2) : "0.00"}
+              />
+            </>
+          ) : (
+            <Input
+              label="Precio"
+              type="number"
+              step="0.01"
+              value={formData.precio}
+              onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+              placeholder="0.00"
+            />
+          )}
           <Input
             label="Categoría"
             value={formData.categoria}
@@ -256,10 +360,7 @@ export default function ServiciosPage() {
 
       <Modal
         isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false)
-          setDeletingServicio(null)
-        }}
+        onClose={() => { setIsDeleteModalOpen(false); setDeletingServicio(null) }}
         title="Eliminar Servicio"
       >
         <div className="text-center">
@@ -271,25 +372,8 @@ export default function ServiciosPage() {
             Esta acción no se puede deshacer.
           </p>
           <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setIsDeleteModalOpen(false)
-                setDeletingServicio(null)
-              }}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              loading={loading}
-              onClick={handleDelete}
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-            >
-              Eliminar
-            </Button>
+            <Button type="button" variant="secondary" onClick={() => { setIsDeleteModalOpen(false); setDeletingServicio(null) }} className="flex-1">Cancelar</Button>
+            <Button type="button" loading={loading} onClick={handleDelete} className="flex-1 bg-red-500 hover:bg-red-600 text-white">Eliminar</Button>
           </div>
         </div>
       </Modal>

@@ -30,7 +30,7 @@ const estadoVariant: Record<string, 'success' | 'warning' | 'danger'> = {
 }
 
 export default function FacturasPage() {
-  const { facturas, configuracion, updateFactura } = useAppStore()
+  const { facturas, configuracion, updateFactura, addAccountingEntry } = useAppStore()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('todas')
   const [searchQuery, setSearchQuery] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -40,6 +40,7 @@ export default function FacturasPage() {
   const [selectedFactura, setSelectedFactura] = useState<any>(null)
   const [paymentType, setPaymentType] = useState<'completo' | 'abono'>('completo')
   const [abonoAmount, setAbonoAmount] = useState('')
+  const [bancoFee, setBancoFee] = useState('')
   const [processingPayment, setProcessingPayment] = useState(false)
 
   // Delete modal state
@@ -73,6 +74,7 @@ export default function FacturasPage() {
     setSelectedFactura(factura)
     setPaymentType('completo')
     setAbonoAmount('')
+    setBancoFee('')
     setPaymentModalOpen(true)
   }
 
@@ -105,6 +107,9 @@ export default function FacturasPage() {
         }
       }
 
+      const montoPagado = paymentType === 'completo' ? selectedFactura.total - newMontoAbonado : parseFloat(abonoAmount)
+      const feeBanco = parseFloat(bancoFee) || 0
+
       const { error } = await supabase
         .from('facturas')
         .update({
@@ -117,6 +122,40 @@ export default function FacturasPage() {
 
       if (error) throw error
 
+      // Create accounting entry for the payment
+      const { data: entry } = await supabase
+        .from('accounting_entries')
+        .insert({
+          fecha: new Date().toISOString().split('T')[0],
+          tipo: 'ingreso',
+          monto: montoPagado,
+          banco_fee: feeBanco,
+          factura_id: selectedFactura.id,
+          descripcion: paymentType === 'completo'
+            ? `Pago completo - Factura ${selectedFactura.numero}`
+            : `Abono de ${formatCurrency(montoPagado)} - Factura ${selectedFactura.numero}`
+        })
+        .select()
+        .single()
+
+      if (entry) addAccountingEntry(entry)
+
+      // If bank fee, create a separate expense entry
+      if (feeBanco > 0) {
+        const { data: feeEntry } = await supabase
+          .from('accounting_entries')
+          .insert({
+            fecha: new Date().toISOString().split('T')[0],
+            tipo: 'egreso',
+            monto: feeBanco,
+            factura_id: selectedFactura.id,
+            descripcion: `Comisión bancaria - Factura ${selectedFactura.numero}`
+          })
+          .select()
+          .single()
+        if (feeEntry) addAccountingEntry(feeEntry)
+      }
+
       updateFactura({
         ...selectedFactura,
         estado: newEstado,
@@ -127,7 +166,7 @@ export default function FacturasPage() {
       toast.success(
         paymentType === 'completo'
           ? `Factura ${selectedFactura.numero} marcada como pagada`
-          : `Abono de ${formatCurrency(parseFloat(abonoAmount))} registrado`
+          : `Abono de ${formatCurrency(montoPagado)} registrado`
       )
       setPaymentModalOpen(false)
       setSelectedFactura(null)
@@ -518,6 +557,25 @@ export default function FacturasPage() {
               )}
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#4c4c4c' }}>
+              Comisión bancaria (opcional)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={bancoFee}
+              onChange={(e) => setBancoFee(e.target.value)}
+              placeholder="0.00"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-willou-orange"
+              style={{ borderColor: '#d7bdff' }}
+            />
+            <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>
+              Se registrará como gasto por comisión bancaria
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <button

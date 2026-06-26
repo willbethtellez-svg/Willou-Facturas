@@ -15,7 +15,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const { setAuthenticated, setConfiguracion, setClientes, setServicios, setFacturas } = useAppStore();
+  const { setAuthenticated, setConfiguracion, setClientes, setServicios, setFacturas, setWorkers, setExpenseCategories, setAccountingEntries } = useAppStore();
 
   useEffect(() => {
     // Check authentication
@@ -55,6 +55,27 @@ export default function DashboardLayout({
           .select('*, cliente:clientes(*), items:factura_items(*, servicio:servicios(*))')
           .order('created_at', { ascending: false });
         if (facturas) setFacturas(facturas);
+
+        // Load workers
+        const { data: workers } = await supabase
+          .from('workers')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (workers) setWorkers(workers);
+
+        // Load expense categories
+        const { data: categories } = await supabase
+          .from('expense_categories')
+          .select('*')
+          .order('nombre', { ascending: true });
+        if (categories) setExpenseCategories(categories);
+
+        // Load accounting entries
+        const { data: entries } = await supabase
+          .from('accounting_entries')
+          .select('*, categoria:expense_categories(*)')
+          .order('fecha', { ascending: false });
+        if (entries) setAccountingEntries(entries);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
