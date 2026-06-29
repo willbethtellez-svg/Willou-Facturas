@@ -9,6 +9,8 @@ export interface Configuracion {
   logo_url: string | null;
   color_principal: string;
   color_secundario: string;
+  ingreso_mensual_deseado: number;
+  margen_freelancer: number;
   created_at: string;
 }
 
@@ -84,6 +86,7 @@ export interface Worker {
   nombre: string;
   tipo: 'interno' | 'freelancer';
   costo_hora: number;
+  horas_disponibles_mes: number;
   telefono: string | null;
   correo: string | null;
   notas: string | null;
@@ -169,4 +172,14 @@ export interface ItemFormData {
   costo_operativo: number;
   porcentaje_utilidad: number;
   utilidad_amount: number;
+}
+
+export interface CostoOperativo {
+  id: string;
+  nombre: string;
+  monto: number;
+  frecuencia: 'mensual' | 'trimestral' | 'anual';
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
 }

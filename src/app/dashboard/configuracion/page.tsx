@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 export default function ConfiguracionPage() {
   const { configuracion, setConfiguracion } = useAppStore()
@@ -87,6 +88,24 @@ export default function ConfiguracionPage() {
       <Header title="Configuración" subtitle="Ajustes de facturación y datos de empresa" />
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Link a Calculadora */}
+        <Link href="/dashboard/configuracion/calculadora" className="block">
+          <Card className="hover:border-willou-orange transition-colors cursor-pointer">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-willou-orange/20 flex items-center justify-center">
+                  <span className="text-xl">🧮</span>
+                </div>
+                <div>
+                  <p className="font-medium text-white">Calculadora de Costos</p>
+                  <p className="text-sm" style={{ color: '#9ca3af' }}>Costo operativo mensual y proyección de ingresos</p>
+                </div>
+              </div>
+              <span style={{ color: '#9ca3af' }}>→</span>
+            </CardContent>
+          </Card>
+        </Link>
+
         {/* Numeración de Facturas */}
         <Card>
           <CardHeader>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Cliente, Servicio, Factura, Configuracion, Worker, ExpenseCategory, AccountingEntry, WorkerMonthlyPayment } from '@/types';
+import { Cliente, Servicio, Factura, Configuracion, Worker, ExpenseCategory, AccountingEntry, WorkerMonthlyPayment, CostoOperativo } from '@/types';
 
 interface AppState {
   // Auth
@@ -54,6 +54,13 @@ interface AppState {
   setWorkerPayments: (payments: WorkerMonthlyPayment[]) => void;
   addWorkerPayment: (payment: WorkerMonthlyPayment) => void;
   updateWorkerPayment: (payment: WorkerMonthlyPayment) => void;
+
+  // Costos Operativos
+  costosOperativos: CostoOperativo[];
+  setCostosOperativos: (costos: CostoOperativo[]) => void;
+  addCostoOperativo: (costo: CostoOperativo) => void;
+  updateCostoOperativo: (costo: CostoOperativo) => void;
+  deleteCostoOperativo: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -134,5 +141,18 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   updateWorkerPayment: (payment) => set((state) => ({
     workerPayments: state.workerPayments.map((p) => (p.id === payment.id ? payment : p)),
+  })),
+
+  // Costos Operativos
+  costosOperativos: [],
+  setCostosOperativos: (costos) => set({ costosOperativos: costos }),
+  addCostoOperativo: (costo) => set((state) => ({
+    costosOperativos: [...state.costosOperativos, costo],
+  })),
+  updateCostoOperativo: (costo) => set((state) => ({
+    costosOperativos: state.costosOperativos.map((c) => (c.id === costo.id ? costo : c)),
+  })),
+  deleteCostoOperativo: (id) => set((state) => ({
+    costosOperativos: state.costosOperativos.filter((c) => c.id !== id),
   })),
 }));
