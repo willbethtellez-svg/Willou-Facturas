@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Cliente, Servicio, Factura, Configuracion } from '@/types';
+import { Cliente, Servicio, Factura, Configuracion, Worker, ExpenseCategory, AccountingEntry, WorkerMonthlyPayment, CostoOperativo } from '@/types';
 
 interface AppState {
   // Auth
@@ -29,6 +29,38 @@ interface AppState {
   setFacturas: (facturas: Factura[]) => void;
   addFactura: (factura: Factura) => void;
   updateFactura: (factura: Factura) => void;
+  deleteFactura: (id: string) => void;
+
+  // Workers
+  workers: Worker[];
+  setWorkers: (workers: Worker[]) => void;
+  addWorker: (worker: Worker) => void;
+  updateWorker: (worker: Worker) => void;
+  deleteWorker: (id: string) => void;
+
+  // Expense Categories
+  expenseCategories: ExpenseCategory[];
+  setExpenseCategories: (categories: ExpenseCategory[]) => void;
+
+  // Accounting Entries
+  accountingEntries: AccountingEntry[];
+  setAccountingEntries: (entries: AccountingEntry[]) => void;
+  addAccountingEntry: (entry: AccountingEntry) => void;
+  updateAccountingEntry: (entry: AccountingEntry) => void;
+  deleteAccountingEntry: (id: string) => void;
+
+  // Worker Payments
+  workerPayments: WorkerMonthlyPayment[];
+  setWorkerPayments: (payments: WorkerMonthlyPayment[]) => void;
+  addWorkerPayment: (payment: WorkerMonthlyPayment) => void;
+  updateWorkerPayment: (payment: WorkerMonthlyPayment) => void;
+
+  // Costos Operativos
+  costosOperativos: CostoOperativo[];
+  setCostosOperativos: (costos: CostoOperativo[]) => void;
+  addCostoOperativo: (costo: CostoOperativo) => void;
+  updateCostoOperativo: (costo: CostoOperativo) => void;
+  deleteCostoOperativo: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -68,5 +100,59 @@ export const useAppStore = create<AppState>((set) => ({
   addFactura: (factura) => set((state) => ({ facturas: [...state.facturas, factura] })),
   updateFactura: (factura) => set((state) => ({
     facturas: state.facturas.map((f) => (f.id === factura.id ? factura : f)),
+  })),
+  deleteFactura: (id) => set((state) => ({
+    facturas: state.facturas.filter((f) => f.id !== id),
+  })),
+
+  // Workers
+  workers: [],
+  setWorkers: (workers) => set({ workers }),
+  addWorker: (worker) => set((state) => ({ workers: [...state.workers, worker] })),
+  updateWorker: (worker) => set((state) => ({
+    workers: state.workers.map((w) => (w.id === worker.id ? worker : w)),
+  })),
+  deleteWorker: (id) => set((state) => ({
+    workers: state.workers.filter((w) => w.id !== id),
+  })),
+
+  // Expense Categories
+  expenseCategories: [],
+  setExpenseCategories: (categories) => set({ expenseCategories: categories }),
+
+  // Accounting Entries
+  accountingEntries: [],
+  setAccountingEntries: (entries) => set({ accountingEntries: entries }),
+  addAccountingEntry: (entry) => set((state) => ({
+    accountingEntries: [...state.accountingEntries, entry],
+  })),
+  updateAccountingEntry: (entry) => set((state) => ({
+    accountingEntries: state.accountingEntries.map((e) => (e.id === entry.id ? entry : e)),
+  })),
+  deleteAccountingEntry: (id) => set((state) => ({
+    accountingEntries: state.accountingEntries.filter((e) => e.id !== id),
+  })),
+
+  // Worker Payments
+  workerPayments: [],
+  setWorkerPayments: (payments) => set({ workerPayments: payments }),
+  addWorkerPayment: (payment) => set((state) => ({
+    workerPayments: [...state.workerPayments, payment],
+  })),
+  updateWorkerPayment: (payment) => set((state) => ({
+    workerPayments: state.workerPayments.map((p) => (p.id === payment.id ? payment : p)),
+  })),
+
+  // Costos Operativos
+  costosOperativos: [],
+  setCostosOperativos: (costos) => set({ costosOperativos: costos }),
+  addCostoOperativo: (costo) => set((state) => ({
+    costosOperativos: [...state.costosOperativos, costo],
+  })),
+  updateCostoOperativo: (costo) => set((state) => ({
+    costosOperativos: state.costosOperativos.map((c) => (c.id === costo.id ? costo : c)),
+  })),
+  deleteCostoOperativo: (id) => set((state) => ({
+    costosOperativos: state.costosOperativos.filter((c) => c.id !== id),
   })),
 }));

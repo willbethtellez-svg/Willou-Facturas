@@ -9,6 +9,8 @@ export interface Configuracion {
   logo_url: string | null;
   color_principal: string;
   color_secundario: string;
+  ingreso_mensual_deseado: number;
+  margen_freelancer: number;
   created_at: string;
 }
 
@@ -32,6 +34,10 @@ export interface Servicio {
   precio: number;
   categoria: string | null;
   activo: boolean;
+  horas_estimadas: number | null;
+  costo_hora_agencia: number | null;
+  porcentaje_utilidad: number | null;
+  precio_sugerido: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,8 +70,66 @@ export interface FacturaItem {
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
+  pricing_mode: 'fijo' | 'horas_internas' | 'freelancer';
+  worker_id: string | null;
+  horas_reales: number | null;
+  costo_worker: number | null;
+  costo_operativo: number | null;
+  porcentaje_utilidad: number | null;
+  utilidad_amount: number | null;
   created_at: string;
   servicio?: Servicio;
+}
+
+export interface Worker {
+  id: string;
+  nombre: string;
+  tipo: 'interno' | 'freelancer';
+  costo_hora: number;
+  horas_disponibles_mes: number;
+  telefono: string | null;
+  correo: string | null;
+  notas: string | null;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseCategory {
+  id: string;
+  nombre: string;
+  tipo: 'operativo' | 'inversion' | 'otro';
+  created_at: string;
+}
+
+export interface AccountingEntry {
+  id: string;
+  fecha: string;
+  tipo: 'ingreso' | 'egreso';
+  categoria_id: string | null;
+  monto: number;
+  banco_fee: number;
+  factura_id: string | null;
+  worker_id: string | null;
+  descripcion: string | null;
+  created_at: string;
+  updated_at: string;
+  categoria?: ExpenseCategory;
+}
+
+export interface WorkerMonthlyPayment {
+  id: string;
+  worker_id: string;
+  mes: string;
+  horas_total: number;
+  monto_total: number;
+  pagado: boolean;
+  fecha_pago: string | null;
+  accounting_entry_id: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+  worker?: Worker;
 }
 
 export interface Asset {
@@ -101,4 +165,21 @@ export interface ItemFormData {
   descripcion: string;
   cantidad: number;
   precio_unitario: number;
+  pricing_mode: 'fijo' | 'horas_internas' | 'freelancer';
+  worker_id: string;
+  horas_reales: number;
+  costo_worker: number;
+  costo_operativo: number;
+  porcentaje_utilidad: number;
+  utilidad_amount: number;
+}
+
+export interface CostoOperativo {
+  id: string;
+  nombre: string;
+  monto: number;
+  frecuencia: 'mensual' | 'trimestral' | 'anual';
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
 }

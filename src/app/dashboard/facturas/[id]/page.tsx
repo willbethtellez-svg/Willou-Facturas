@@ -16,7 +16,7 @@ import Link from 'next/link'
 export default function FacturaDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { facturas, configuracion, updateFactura } = useAppStore()
+  const { facturas, configuracion, updateFactura, workers, addAccountingEntry } = useAppStore()
 
   const [factura, setFactura] = useState<any>(null)
   const [cliente, setCliente] = useState<any>(null)
@@ -74,13 +74,28 @@ export default function FacturaDetailPage() {
 
       const { error } = await supabase
         .from('facturas')
-        .update({ estado: 'pagada', updated_at: new Date().toISOString() })
+        .update({ estado: 'pagada', monto_abonado: factura.total, saldo_pendiente: 0, updated_at: new Date().toISOString() })
         .eq('id', factura.id)
 
       if (error) throw error
 
-      updateFactura({ ...factura, estado: 'pagada' })
-      setFactura({ ...factura, estado: 'pagada' })
+      // Create accounting entry
+      const { data: entry } = await supabase
+        .from('accounting_entries')
+        .insert({
+          fecha: new Date().toISOString().split('T')[0],
+          tipo: 'ingreso',
+          monto: factura.total,
+          factura_id: factura.id,
+          descripcion: `Pago completo - Factura ${factura.numero}`
+        })
+        .select()
+        .single()
+
+      if (entry) addAccountingEntry(entry)
+
+      updateFactura({ ...factura, estado: 'pagada', monto_abonado: factura.total, saldo_pendiente: 0 })
+      setFactura({ ...factura, estado: 'pagada', monto_abonado: factura.total, saldo_pendiente: 0 })
       toast.success('Factura marcada como pagada')
     } catch (err) {
       console.error('Error marking as paid:', err)
@@ -304,10 +319,19 @@ export default function FacturaDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item, index) => (
+                    {items.map((item, index) => {
+                      const worker = item.worker_id ? workers.find(w => w.id === item.worker_id) : null
+                      return (
                       <tr key={item.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                         <td className="py-3 px-2" style={{ color: '#232323' }}>{index + 1}</td>
-                        <td className="py-3 px-2" style={{ color: '#232323' }}>{item.descripcion}</td>
+                        <td className="py-3 px-2">
+                          <div style={{ color: '#232323' }}>{item.descripcion}</div>
+                          {worker && (
+                            <div style={{ fontSize: 11, color: '#fb5a2e' }}>
+                              👤 {worker.nombre} ({worker.tipo === 'interno' ? 'Interno' : 'Freelancer'})
+                            </div>
+                          )}
+                        </td>
                         <td className="text-right py-3 px-2" style={{ color: '#232323' }}>{item.cantidad}</td>
                         <td className="text-right py-3 px-2" style={{ color: '#232323' }}>
                           {formatCurrency(item.precio_unitario)}
@@ -316,7 +340,7 @@ export default function FacturaDetailPage() {
                           {formatCurrency(item.cantidad * item.precio_unitario)}
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
